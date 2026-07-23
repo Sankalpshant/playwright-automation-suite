@@ -1,0 +1,197 @@
+{
+  "info": {
+    "name": "ReqRes API Test Collection",
+    "description": "API test collection covering auth, CRUD, and error handling against the ReqRes public test API. Import directly into Postman.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Successful Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"eve.holt@reqres.in\",\n  \"password\": \"cityslicka\"\n}"
+        },
+        "url": { "raw": "https://reqres.in/api/login", "host": ["reqres", "in"], "path": ["api", "login"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response has token', function () { pm.expect(pm.response.json()).to.have.property('token'); });",
+              "pm.test('Response time under 1000ms', function () { pm.expect(pm.response.responseTime).to.be.below(1000); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Login Missing Password (Negative)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"eve.holt@reqres.in\"\n}" },
+        "url": { "raw": "https://reqres.in/api/login", "host": ["reqres", "in"], "path": ["api", "login"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Error message present', function () { pm.expect(pm.response.json()).to.have.property('error'); });",
+              "pm.test('Error message is specific', function () { pm.expect(pm.response.json().error).to.eql('Missing password'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users - Get Single User",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "https://reqres.in/api/users/2", "host": ["reqres", "in"], "path": ["api", "users", "2"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('User id matches request', function () { pm.expect(pm.response.json().data.id).to.eql(2); });",
+              "pm.test('Response has valid email format', function () {",
+              "  const email = pm.response.json().data.email;",
+              "  pm.expect(email).to.match(/^[^@]+@[^@]+\\.[^@]+$/);",
+              "});",
+              "pm.test('Schema: data object has required fields', function () {",
+              "  const data = pm.response.json().data;",
+              "  pm.expect(data).to.include.all.keys('id', 'email', 'first_name', 'last_name', 'avatar');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users - Get Non-Existent User (Boundary)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "https://reqres.in/api/users/23", "host": ["reqres", "in"], "path": ["api", "users", "23"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 404 for non-existent user', function () { pm.response.to.have.status(404); });",
+              "pm.test('Response body is empty object', function () { pm.expect(pm.response.json()).to.eql({}); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users - Create User (CRUD: Create)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Sankalp Shant\",\n  \"job\": \"QA Engineer\"\n}" },
+        "url": { "raw": "https://reqres.in/api/users", "host": ["reqres", "in"], "path": ["api", "users"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201 Created', function () { pm.response.to.have.status(201); });",
+              "pm.test('Response echoes submitted name', function () { pm.expect(pm.response.json().name).to.eql('Sankalp Shant'); });",
+              "pm.test('Response includes generated id and createdAt', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('id');",
+              "  pm.expect(body).to.have.property('createdAt');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users - Update User (CRUD: Update - PUT)",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Sankalp Shant\",\n  \"job\": \"Senior QA Engineer\"\n}" },
+        "url": { "raw": "https://reqres.in/api/users/2", "host": ["reqres", "in"], "path": ["api", "users", "2"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Job field is updated in response', function () { pm.expect(pm.response.json().job).to.eql('Senior QA Engineer'); });",
+              "pm.test('updatedAt timestamp is present', function () { pm.expect(pm.response.json()).to.have.property('updatedAt'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users - Delete User (CRUD: Delete)",
+      "request": {
+        "method": "DELETE",
+        "url": { "raw": "https://reqres.in/api/users/2", "host": ["reqres", "in"], "path": ["api", "users", "2"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 204 No Content', function () { pm.response.to.have.status(204); });",
+              "pm.test('Response body is empty', function () { pm.expect(pm.response.text()).to.eql(''); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users - List Users Pagination (Boundary)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "https://reqres.in/api/users?page=2",
+          "host": ["reqres", "in"],
+          "path": ["api", "users"],
+          "query": [{ "key": "page", "value": "2" }]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('page field matches requested page', function () { pm.expect(pm.response.json().page).to.eql(2); });",
+              "pm.test('data array length matches per_page value', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.data.length).to.be.at.most(body.per_page);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}
